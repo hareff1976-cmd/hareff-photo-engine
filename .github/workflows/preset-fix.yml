@@ -1,0 +1,74 @@
+name: HAREFF Preset Fix
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/preset-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text()
+          if "presetImportSequence" not in s:
+              a = s.index("$('presetImport').onclick")
+              b = s.index("\nfunction enableAdvanced", a)
+              code = """let presetImportSequence=0;
+          function importPresetText(raw,ver){
+            if(raw.length>200000)throw Error('File too large');
+            const obj=JSON.parse(raw.replace(/^\\uFEFF/,''));
+            if(obj.format!=='HAREFF_PHOTO_PRESET'||obj.version!==1)throw Error('Invalid preset format');
+            const settings=sanitizeSettings(obj.settings);
+            if(ver!==version||exporting||!source)return false;
+            applySettings(settings);
+            $('presetName').value=typeof obj.name==='string'?obj.name.slice(0,80):'Import';
+            status('Пресет применён. Нажмите Сохранить.');
+            return true;
+          }
+          $('presetImport').onclick=()=>$('presetFile').click();
+          $('presetFile').onchange=async()=>{
+            const input=$('presetFile'),f=input.files[0];
+            if(!f)return;
+            const ver=version,seq=++presetImportSequence;
+            try{
+              if(f.size>200000)throw Error('File too large');
+              const raw=await f.text();
+              if(seq===presetImportSequence)importPresetText(raw,ver);
+            }catch(e){
+              status('Ошибка импорта: '+e.message,true);
+            }finally{
+              if(seq===presetImportSequence)input.value='';
+            }
+          };
+          $('presetPasteApply').onclick=()=>{
+            ++presetImportSequence;
+            $('presetFile').value='';
+            try{
+              if(importPresetText($('presetPaste').value,version))$('presetPaste').value='';
+            }catch(e){status(e.message,true);}
+          };"""
+              s=s[:a]+code+s[b:]
+              anchor='id="presetFile" hidden>'
+              assert s.count(anchor)==1
+              s=s.replace(anchor,anchor+'<details><summary>Вставить JSON / Paste JSON</summary><textarea id="presetPaste" rows="5" style="width:100%"></textarea><button id="presetPasteApply" class="wide">Применить JSON</button></details>',1)
+              p.write_text(s)
+          p=Path("sw.js")
+          s=p.read_text()
+          s=s.replace("1.0.0-rc1-pages1","1.0.0-rc1-pages2")
+          s=s.replace("c.addAll(ASSETS)))","c.addAll(ASSETS.map(a=>new Request(new URL(a,self.registration.scope),{cache:'reload'})))).then(()=>self.skipWaiting()))")
+          p.write_text(s)
+          PY
+          node --check sw.js
+          git config user.name "HAREFF Update"
+          git config user.email "update@users.noreply.github.com"
+          git add index.html sw.js
+          git diff --cached --quiet || git commit -m "Fix mobile preset import"
+          git push
