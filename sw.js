@@ -1,5 +1,5 @@
 const PREFIX = 'hareff-pages:' + self.registration.scope + ':';
-const CACHE = PREFIX + '1.0.0-rc1-pages2';
+const CACHE = PREFIX + '1.1-signature-pages1';
 const ASSETS = [
   './index.html',
   './studio.html',
