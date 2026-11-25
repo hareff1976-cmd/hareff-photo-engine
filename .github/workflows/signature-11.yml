@@ -1,0 +1,59 @@
+name: HAREFF Signature Store 1.1
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/signature-11.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python3 <<'PY'
+          STORE=r'''
+          /* HAREFF Signature Store 1.1 */
+          (()=>{
+          const free={"1":{"contrast":9,"highlights":-22,"shadows":17,"temperature":-5,"saturation":-5,"vibrance":9,"clarity":8,"sharpness":10,"noiseChroma":12,"textureProtect":60,"edgeSharp":12,"microContrast":7,"dehaze":7,"curve_rgb_0":2,"curve_rgb_1":-3,"curve_rgb_3":3,"curve_rgb_4":-3,"hsl_2_h":5,"hsl_2_s":-12,"hsl_2_l":-3,"hsl_3_h":4,"hsl_3_s":-13,"hsl_3_l":-5,"hsl_4_h":-3,"hsl_4_s":-5,"hsl_5_h":-4,"hsl_5_s":5,"hsl_5_l":-4,"grade_sh_x":-7,"grade_sh_y":-9,"grade_sh_l":-1,"grade_hi_x":4,"grade_hi_y":5,"grade_hi_l":1},"2":{"exposure":0.05,"contrast":2,"highlights":-18,"shadows":10,"temperature":2,"tint":1,"saturation":-4,"vibrance":4,"clarity":-4,"sharpness":7,"noiseLuma":5,"noiseChroma":10,"textureProtect":75,"edgeSharp":4,"microContrast":-3,"curve_rgb_0":3,"curve_rgb_1":2,"curve_rgb_2":3,"curve_rgb_3":1,"curve_rgb_4":-3,"hsl_0_s":-8,"hsl_0_l":2,"hsl_1_s":-5,"hsl_1_l":3,"hsl_2_s":-6},"10":{"contrast":4,"highlights":-12,"shadows":9,"vibrance":5,"clarity":3,"sharpness":7,"noiseChroma":8,"textureProtect":65,"edgeSharp":5,"curve_rgb_2":1,"curve_rgb_3":2,"curve_rgb_4":-2}}, key={"kty":"EC","crv":"P-256","x":"14Og_XRJ_XIFdAfpHn0OmaJbgsv7ZLBiiwh3Uyser7o","y":"BZehpL4Ul6qbUt2KqTohHtd6sThZVWCa3LOTC4gly9U"}, storage='hareff.signature01.token.v1';
+          const items=[['1','Northern Soul','Пейзаж / Landscape','#90a3a9','#28493a'],['2','Pure Portrait','Портрет / Portrait','#e4c2a4','#875e50'],['3','Silver Noir','Монохром / B&W','#ccc','#262626'],['4','Golden Silence','Закат / Sunset','#e9c17f','#82512b'],['5','Architecture Pro','Архитектура / Architecture','#b7bdc3','#525c66'],['6','Cinema Vision','Кино / Cinema','#b89b79','#285b64'],['7','Analog Memory','Плёнка / Film','#c6b99c','#776d5d'],['8','Macro Details','Макро / Macro','#a3ad67','#324b31'],['9','Commercial Black','Предметы / Product','#848b95','#15171b'],['10','Original Balance','Универсальный / Neutral','#b6c6c6','#646d4b']];
+          let paid={},selected=null,selectedVersion=-1,seq=0;
+          const panel=document.createElement('details');panel.id='signatureStore';panel.className='group';panel.innerHTML='<summary>HAREFF / SIGNATURE COLLECTION 01</summary><p class="note">3 бесплатных пресета · 7 по коду активации / 3 free · 7 locked</p><div id="sigGrid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"></div><p class="note">Цветовые палитры — ориентир. Эффект зависит от фото. / Palette previews only.</p><label for="sigStrength">Интенсивность / Strength <output id="sigValue">100%</output></label><input id="sigStrength" type="range" min="0" max="100" value="100" style="width:100%"><p class="note" id="sigStatus" role="status">Загрузите фото и выберите пресет.</p><details><summary>Разблокировать коллекцию / Unlock</summary><p class="note">Плановая цена: 490 ₽. Оплата пока не подключена. После покупки вводится подписанный код коллекции. / Payments not connected yet.</p><textarea id="sigCode" rows="4" maxlength="50000" placeholder="Код активации / Activation code" style="width:100%;box-sizing:border-box"></textarea><button id="sigActivate" class="wide">Активировать / Activate</button><button id="sigForget" class="wide">Удалить код с устройства / Remove code</button></details>';
+          $('advancedTools').before(panel);
+          const say=t=>$('sigStatus').textContent=t;
+          const available=id=>free[id]||paid[id];
+          function draw(){const grid=$('sigGrid');grid.replaceChildren();for(const [id,name,genre,a,b] of items){const open=!!available(id),btn=document.createElement('button');btn.type='button';btn.dataset.sigId=id;btn.setAttribute('aria-pressed',String(selected===id));btn.style.cssText='text-align:left;white-space:normal;min-width:0;padding:8px;opacity:'+(open?'1':'.52');const sw=document.createElement('span');sw.style.cssText='display:block;height:32px;border-radius:4px;margin-bottom:6px;background:linear-gradient(135deg,'+a+','+b+')';const title=document.createElement('strong');title.style.display='block';title.textContent=name;const cap=document.createElement('small');cap.style.display='block';cap.textContent=genre+' · '+(free[id]?'FREE':open?'PRO':'🔒 PRO');btn.append(sw,title,cap);btn.onclick=()=>{if(!available(id)){say('Нужен код коллекции / Activation required');return}if(!source||exporting){say('Сначала загрузите фото / Load a photo first');return}selected=id;selectedVersion=version;apply();draw()};grid.append(btn)}}
+          function apply(){if(!selected||selectedVersion!==version||!source||exporting||!available(selected))return;const target=sanitizeSettings(available(selected)),t=Number($('sigStrength').value)/100;const out=Object.fromEntries(Object.keys(defaults).map(k=>[k,defaults[k]+(target[k]-defaults[k])*t]));applySettings(out);say(items.find(x=>x[0]===selected)[1]+' · '+Math.round(t*100)+'%');}
+          $('sigStrength').oninput=()=>{$('sigValue').textContent=$('sigStrength').value+'%'};$('sigStrength').onchange=()=>{if(selectedVersion!==version){say('Выберите пресет для текущего фото / Select a preset for this photo');return}apply()};
+          function decode(s){if(!/^[A-Za-z0-9_-]+$/.test(s))throw Error('Invalid code');return Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-s.length%4)%4)),c=>c.charCodeAt(0))}
+          async function verify(token){if(!globalThis.crypto?.subtle)throw Error('Требуется HTTPS / HTTPS required');if(token.length>50000)throw Error('Code too large');const parts=token.trim().split('.');if(parts.length!==2)throw Error('Invalid code');const [p,s]=parts;const pk=await crypto.subtle.importKey('jwk',key,{name:'ECDSA',namedCurve:'P-256'},false,['verify']);if(!await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},pk,decode(s),new TextEncoder().encode(p)))throw Error('Invalid signature');const obj=JSON.parse(new TextDecoder().decode(decode(p)));if(obj.collection!=='HAREFF-SIGNATURE-01'||obj.version!==1||!obj.presets||Object.keys(obj.presets).sort().join(',')!=='3,4,5,6,7,8,9')throw Error('Wrong collection');return Object.fromEntries(Object.entries(obj.presets).map(([id,s])=>[id,sanitizeSettings(s)]))}
+          async function activate(token,persist){const n=++seq;try{const result=await verify(token);if(n!==seq)return;paid=result;draw();let ok=true;if(persist){try{localStorage.setItem(storage,token)}catch(e){ok=false}}$('sigCode').value='';say(ok?'Коллекция активирована / Collection unlocked':'Активировано до закрытия страницы / Session only');}catch(e){if(n===seq)say('Не удалось активировать / '+e.message)}}
+          $('sigActivate').onclick=()=>activate($('sigCode').value.trim(),true);$('sigForget').onclick=()=>{++seq;paid={};if(selected&&!free[selected])selected=null;try{localStorage.removeItem(storage)}catch(e){}draw();say('Код удалён. Уже применённые правки сохранены. / Code removed.')};draw();try{const saved=localStorage.getItem(storage);if(saved)activate(saved,false)}catch(e){}
+          })();
+          '''
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          assert 'presetImportSequence' in s and 'function applySettings' in s
+          anchor='</script></body></html>'
+          assert s.count(anchor)==1
+          if 'HAREFF Signature Store 1.1' not in s:
+              s=s.replace(anchor,STORE+'\n'+anchor)
+              p.write_text(s)
+          p=Path('sw.js'); s=p.read_text()
+          assert '1.0.0-rc1-pages2' in s or '1.1-signature-pages1' in s
+          p.write_text(s.replace('1.0.0-rc1-pages2','1.1-signature-pages1'))
+          PY
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          Path('/tmp/hareff-check.js').write_text(s.split('<script>',1)[1].rsplit('</script>',1)[0])
+          PY
+          node --check /tmp/hareff-check.js
+          node --check sw.js
+          git config user.name "HAREFF Update"
+          git config user.email "update@users.noreply.github.com"
+          git add index.html sw.js
+          git diff --cached --quiet || git commit -m "Add Signature Collection 1.1"
+          git push
