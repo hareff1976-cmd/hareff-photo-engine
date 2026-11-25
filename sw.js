@@ -1,5 +1,5 @@
 const PREFIX = 'hareff-pages:' + self.registration.scope + ':';
-const CACHE = PREFIX + '1.0.0-rc1-pages1';
+const CACHE = PREFIX + '1.0.0-rc1-pages2';
 const ASSETS = [
   './index.html',
   './studio.html',
@@ -10,7 +10,7 @@ const ASSETS = [
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE)
-    .then(c => c.addAll(ASSETS)));
+    .then(c => c.addAll(ASSETS.map(a=>new Request(new URL(a,self.registration.scope),{cache:'reload'})))).then(()=>self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
