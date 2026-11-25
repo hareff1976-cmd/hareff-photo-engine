@@ -1,0 +1,71 @@
+name: HAREFF Original Fidelity 1.1.1
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fidelity-111.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          if 'HAREFF Original Fidelity 1.1.1' not in s:
+              def replace(old,new):
+                  global s
+                  assert s.count(old)==1, f'Unexpected source: {old[:90]} ({s.count(old)})'
+                  s=s.replace(old,new,1)
+              assert 'hareff.signature01.token.v1' in s and 'presetImportSequence' in s
+              replace('<canvas id="after"></canvas><canvas id="before"></canvas>','<canvas id="after"></canvas>')
+              replace('previewPixels=null,version=0','previewPixels=null,fidelityPixels=null,version=0')
+              replace('const scale=Math.min(1,1400/Math.max(w,h));','const scale=Math.min(1,2560/Math.max(w,h),Math.sqrt(4000000/(w*h)));')
+              replace("ctx.drawImage(img,0,0,nw,nh);const data=", "ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(img,0,0,nw,nh);const data=")
+              replace('previewPixels=data;version++;','previewPixels=data;fidelityPixels=data;version++;')
+              replace("for(const id of ['before','after']){const target=$(id);target.width=pw;target.height=ph;target.getContext('2d').putImageData(data,0,0)}", "const target=$('after');target.width=pw;target.height=ph;drawFidelityFrame();")
+              replace('function setView(v){comp.dataset.view=v;', 'function setView(v){comp.dataset.view=v;drawFidelityFrame();')
+              replace("comp.style.setProperty('--split',v+'%');}","comp.style.setProperty('--split',v+'%');if(comp.dataset.view==='split')drawFidelityFrame();}")
+              replace('async function renderPreview(){', '''// HAREFF Original Fidelity 1.1.1
+          function fidelityNeutral(p=params,ms=masks){return Object.values(p).every(v=>v===0)&&!(ms||[]).some(m=>m.enabled&&m.opacity&&Object.values(m.adjust||{}).some(Boolean));}
+          function drawFidelityFrame(){
+           if(!source||!previewPixels||!fidelityPixels)return;
+           const ctx=$('after').getContext('2d'),view=comp.dataset.view;
+           if(view==='before'||fidelityPixels===previewPixels){ctx.putImageData(previewPixels,0,0);return;}
+           ctx.putImageData(fidelityPixels,0,0);
+           if(view==='split'){const x=Math.round(pw*Number($('split').value)/100);if(x>0)ctx.putImageData(previewPixels,0,0,0,0,x,ph);}
+          }
+          async function renderPreview(){''')
+              replace("const out=await processAsync(previewPixels.data.slice().buffer,w,h,p,1);if(ver===version&&seq===previewSeq){$('after').getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(out),w,h),0,0);", "const out=fidelityNeutral(p,masks)?null:await processAsync(previewPixels.data.slice().buffer,w,h,p,1);if(ver===version&&seq===previewSeq){fidelityPixels=out?new ImageData(new Uint8ClampedArray(out),w,h):previewPixels;drawFidelityFrame();")
+              replace("const canvas=$(histSource),a=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;", "const a=(histSource==='before'?previewPixels:(fidelityPixels||previewPixels)).data;")
+              replace('Math.max(1,Math.max(w,h)/1400)', 'Math.max(1,Math.max(w,h)/Math.max(1,Math.round(Math.max(w,h)*Math.min(1,2560/Math.max(w,h),Math.sqrt(4000000/(w*h))))))')
+              replace('<button id="zoomIn"', '<button id="fidelityOne" title="Один пиксель превью на физический пиксель экрана" aria-label="1:1 превью">1:1</button><button id="zoomIn"')
+              replace("$('zoomIn').onclick=()=>zoomCenter(1.5);", "$('fidelityOne').onclick=()=>{if(!source)return;const w=comp.offsetWidth;if(!w)return;zoom=pw/(w*(window.devicePixelRatio||1));panX=panY=0;applyZoom();status((pw===source.width&&ph===source.height?'1:1 оригинал / Original pixels':'1:1 превью / Preview pixels')+' · '+pw+' × '+ph);};$('zoomIn').onclick=()=>zoomCenter(1.5);")
+              replace('<span id="previewInfo">Экспорт: исходное разрешение</span>', '<span id="previewInfo">Экспорт: исходное разрешение</span><button id="fidelityCheck" disabled>Проверка пикселей / Pixel test</button><button id="fidelityOriginal" disabled>Скачать оригинал / Original file</button>')
+              replace("$('reset').disabled=!on;", "$('reset').disabled=!on;$('fidelityCheck').disabled=$('fidelityOriginal').disabled=!on;")
+              replace("const singleSave=$('save').onclick;", '''$('fidelityOriginal').onclick=()=>{if(!batchActive||!source||exporting||batchRunning||batchSwitching)return;if(!fidelityNeutral()){status('Есть правки. Сбросьте их или используйте обычный экспорт.',true);return;}batchDownload(batchActive.file,batchActive.file.name);status('Исходный файл скачан без перекодирования.');};
+          $('fidelityCheck').onclick=async()=>{if(!source||exporting)return;if(!fidelityNeutral()){status('Для теста обнулите все правки.',true);return;}const ver=version,seq=previewSeq,original=previewPixels;try{const out=new Uint8ClampedArray(await processAsync(original.data.slice().buffer,pw,ph,{...params},1,masks));if(ver!==version||seq!==previewSeq)return;let diff=0;for(let i=0;i<out.length;i+=4)if(out[i]!==original.data[i]||out[i+1]!==original.data[i+1]||out[i+2]!==original.data[i+2]||out[i+3]!==original.data[i+3])diff++;status('Проверка пикселей: '+diff+' из '+(pw*ph)+' изменено / pixels changed',diff!==0);}catch(e){status('Ошибка проверки: '+e.message,true);}};
+          const singleSave=$('save').onclick;''')
+              # Keep existing format and quality export semantics; byte-exact original is a separate button.
+              replace('<title>HAREFF Photo Engine 1.0 RC — Premium Black</title>','<title>HAREFF Photo Engine 1.1.1 — Original Fidelity</title>')
+              p.write_text(s,encoding='utf-8')
+          p=Path('sw.js');s=p.read_text(encoding='utf-8');assert '1.1-signature-pages1' in s or '1.1.1-fidelity-pages1' in s;p.write_text(s.replace('1.1-signature-pages1','1.1.1-fidelity-pages1'),encoding='utf-8')
+          PY
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          assert 'hareff.signature01.token.v1' in s and 'presetImportSequence' in s
+          assert 'HAREFF Original Fidelity 1.1.1' in s
+          Path('/tmp/hareff-check.js').write_text(s.split('<script>',1)[1].rsplit('</script>',1)[0])
+          PY
+          node --check /tmp/hareff-check.js
+          node --check sw.js
+          git config user.name "HAREFF Update"
+          git config user.email "update@users.noreply.github.com"
+          git add index.html sw.js
+          git diff --cached --quiet || git commit -m "Original Fidelity 1.1.1"
+          git push
