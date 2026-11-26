@@ -1,0 +1,132 @@
+name: HV One Compact Tools 1.3.2
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/compact-132.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python3 <<'PYCODE'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          marker='/* HV One Compact Tools 1.3.2 */'
+          if marker not in s:
+              assert s.count('/* HV One Immersive 1.3.1 */')==2
+              assert 'hareff.signature01.token.v1' in s and 'function fidelityNeutral' in s
+              css='''
+          /* HV One Compact Tools 1.3.2 */
+          .hv-compact-params{display:none}
+          @media(max-width:850px) and (orientation:portrait) and (min-height:480px){
+           .hv-mobile-nav{display:flex;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;touch-action:pan-x;overscroll-behavior-x:contain;gap:4px;padding-bottom:2px;scroll-snap-type:x proximity}
+           .hv-mobile-nav button{flex:0 0 66px;scroll-snap-align:start;min-height:40px;padding:3px 1px;font-size:10px;white-space:nowrap}
+           .hv-mobile-nav button svg{width:17px;height:17px}
+           body.hv-focus .side{display:flex;flex-direction:column;gap:3px;max-height:28dvh;overflow:hidden;padding:5px 8px max(4px,env(safe-area-inset-bottom));background:rgba(12,13,16,.68);border-radius:12px 12px 0 0}
+           body.hv-focus .side .hv-mobile-nav{flex:none;margin:0;min-height:38px}
+           body.hv-focus .side .hv-mobile-nav button{min-height:36px;flex-basis:64px}
+           body.hv-focus .side>.hv-compact-params{display:flex!important;flex:none;gap:4px;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;scrollbar-width:none;padding:0;min-height:27px}
+           .hv-compact-params button{flex:none;white-space:nowrap;font-size:11px;padding:4px 8px;min-height:26px;background:#24262cba;border-color:#ffffff30}
+           .hv-compact-params button[aria-pressed=true]{background:#d7dadf;color:#111;border-color:#d7dadf}
+           body.hv-focus .side #controls{flex:0 0 auto;min-height:0}
+           body.hv-focus .side #controls>.group{padding:0;border:0}
+           body.hv-focus .side #controls>.group:not([data-hv-current=true]),body.hv-focus .side #controls .control:not([data-hv-current=true]){display:none!important}
+           body.hv-focus .side #controls .control{margin:0}
+           body.hv-focus .side #controls .control label{font-size:11px;line-height:1.2}
+           body.hv-focus .side #controls .control input{height:24px;margin:0}
+           body.hv-focus .side .hv-mobile-actions{flex:none;padding:2px 0 0;gap:4px}
+           body.hv-focus .side .hv-mobile-actions button{min-height:32px;padding:3px;font-size:10px}
+           body.hv-focus .side .hv-mobile-actions button:nth-child(-n+2){font-size:17px}
+           body.hv-focus .side>[data-hv-extra-active=true]{display:block!important;flex:0 1 auto;min-height:0;overflow:auto;margin:0;padding:4px 2px;border:0;overscroll-behavior:contain;touch-action:pan-y}
+           body.hv-focus .side>#advancedTools[data-hv-extra-active=true]>details:not([data-hv-extra-active=true]){display:none!important}
+           body.hv-focus.hv-extra .side>#controls,body.hv-focus.hv-extra .side>.hv-compact-params{display:none!important}
+           body.hv-focus.hv-extra .side{max-height:36dvh}
+           body.hv-focus .side #advancedTools canvas.graph-square{max-width:180px;margin-inline:auto;touch-action:none}
+           body.hv-focus .side input[type=range]{touch-action:pan-x}
+           body.hv-focus .stage>.comparebar{position:absolute;top:calc(max(6px,env(safe-area-inset-top)) + 80px);left:8px;right:8px;z-index:7;padding:3px 5px;border-radius:8px;background:#101114a8;touch-action:pan-x}
+           body.hv-focus-hidden .stage>.comparebar{display:none!important}
+           .hv-compact-params [lang=en]{display:none}
+           html[lang=en] .hv-compact-params [lang=ru]{display:none}
+           html[lang=en] .hv-compact-params [lang=en]{display:inline}
+           body[data-beta-tier=free] .hv-mobile-nav button[data-pro=true]{display:none}
+           body[data-beta-tier=free].hv-focus .side>#localPanel{display:none!important}
+          }
+          '''
+              js='''
+          /* HV One Compact Tools 1.3.2 */
+          (()=>{
+           const body=document.body,side=document.querySelector('.side'),workspace=document.querySelector('.workspace');
+           const nav=document.querySelector('.hv-mobile-nav'),bar=workspace.querySelector('.comparebar'),actions=document.querySelector('.hv-mobile-actions'),controls=$('controls'),advanced=$('advancedTools');
+           const media=matchMedia('(max-width:850px) and (orientation:portrait) and (min-height:480px)');
+           const moves=[nav,bar,actions].map(el=>{const mark=document.createComment('HV focus original position');el.before(mark);return {el,mark};});
+           let active=false,previousScroll=0,current='light';
+           const names={exposure:['Экспозиция','Exposure'],highlights:['Света','Highlights'],shadows:['Тени','Shadows'],contrast:['Контраст','Contrast'],dehaze:['Дымка','Dehaze'],temperature:['Температура','Temperature'],tint:['Оттенок','Tint'],saturation:['Насыщенность','Saturation'],vibrance:['Красочность','Vibrance'],clarity:['Чёткость','Clarity'],sharpness:['Резкость','Sharpness'],edgeSharp:['Контуры','Edges'],microContrast:['Микроконтраст','Microcontrast'],noiseLuma:['Яркостный','Luminance'],noiseChroma:['Цветовой','Color noise'],textureProtect:['Защита текстур','Texture protection']};
+           const keys={light:['exposure','highlights','shadows'],contrast:['contrast','dehaze'],color:['temperature','tint','saturation','vibrance'],detail:['clarity','sharpness','edgeSharp','microContrast'],noise:['noiseLuma','noiseChroma','textureProtect']};
+           const label=(ru,en)=>`<span lang="ru">${ru}</span><span lang="en">${en}</span>`;
+           const paramsBar=document.createElement('div');paramsBar.className='hv-compact-params';paramsBar.setAttribute('aria-label','Параметры / Parameters');controls.before(paramsBar);
+           const extras=[
+           ['profiles','Профиль','Profile',$('presets').closest('.group'),false,'<path d="M4 5h16v14H4zM7 15l4-5 6 6"/>'],
+           ['signature','Коллекция','Signature',$('signatureStore'),false,'<path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/>'],
+           ['curves','Кривые','Curves',$('curve').closest('details'),true,'<path d="M3 21V3M3 21h18M4 19C9 19 9 5 20 5"/>'],
+           ['hsl','HSL','HSL',advanced.children[1],true,'<circle cx="12" cy="12" r="9"/><path d="M12 3v9l8 4M12 12l-8 5"/>'],
+           ['grading','Грейдинг','Grading',advanced.children[2],true,'<circle cx="12" cy="12" r="9"/><circle cx="14" cy="10" r="3"/>'],
+           ['presets','Пресеты','Presets',$('presetName').closest('details'),false,'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>'],
+           ['masks','Маски','Masks',$('localPanel'),true,'<circle cx="12" cy="12" r="9" stroke-dasharray="3 2"/><path d="M8 16l8-8"/>'],
+           ['histogram','RGB','RGB',$('advancedHead'),false,'<path d="M3 20h18M5 18v-5m4 5V7m4 11V4m4 14V9m4 9v-4"/>'],
+           ['batch','Серия','Batch',$('batchPanel'),false,'<rect x="3" y="6" width="15" height="15"/><path d="M7 3h14v14"/>'],
+           ['raw','RAW','RAW',$('rawPanel'),false,'<path d="M5 3h10l4 4v14H5zM14 3v5h5M8 15h8"/>'],
+           ['projects','Проекты','Projects',$('projectPanel'),false,'<path d="M3 7h7l2 3h9v10H3z"/>'],
+           ['export','Экспорт','Export',$('save').closest('.group'),false,'<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>'],
+           ['fidelity','Оригинал','Original',side.querySelector('.hv-mobile-extras'),false,'<path d="M12 3l8 4v5c0 5-8 9-8 9s-8-4-8-9V7zM8 12l3 3 5-6"/>']
+           ];
+           if(extras.some(e=>!e[3]))throw Error('HV tool target missing');
+           function clearExtra(){for(const el of side.querySelectorAll('[data-hv-extra-active]'))delete el.dataset.hvExtraActive;body.classList.remove('hv-extra');}
+           function setParameter(k){for(const [id,f] of Object.entries(fields))f.inp.closest('.control').dataset.hvCurrent=String(id===k);for(const g of controls.children)g.dataset.hvCurrent=String(!!g.querySelector('.control[data-hv-current=true]'));for(const b of paramsBar.children)b.setAttribute('aria-pressed',String(b.dataset.key===k));}
+           function basic(id){clearExtra();current=id;for(const b of nav.children)b.setAttribute('aria-pressed',String(b.dataset.tool===id));paramsBar.replaceChildren();for(const k of keys[id]){const b=document.createElement('button');b.type='button';b.dataset.key=k;b.innerHTML=label(...names[k]);b.onclick=()=>setParameter(k);paramsBar.append(b)}setParameter(keys[id][0]);}
+           const toolbar=document.createElement('div');toolbar.className='hv-focusbar';toolbar.innerHTML='<button type="button" id="hvFocusDone">'+label('Готово','Done')+'</button><button type="button" id="hvFocusHide" aria-label="Панель / Panel" aria-expanded="true"><span class="hv-hide-panel">'+label('Скрыть','Hide')+'</span><span class="hv-show-panel">'+label('Инструменты','Tools')+'</span></button>';stage.append(toolbar);
+           function refresh(){requestAnimationFrame(()=>{if(source)fit();});}
+           function togglePanel(hide){body.classList.toggle('hv-focus-hidden',hide);$('hvFocusHide').setAttribute('aria-expanded',String(!hide));}
+           function enter(){if(active)return true;if(!source||exporting||full||!media.matches)return false;previousScroll=side.scrollTop;active=true;stage.append(bar);side.prepend(nav);controls.after(actions);side.append(actions);body.classList.add('hv-focus');togglePanel(false);side.scrollTop=0;refresh();return true;}
+           function exit(){if(!active)return;active=false;togglePanel(false);clearExtra();body.classList.remove('hv-focus');for(const {el,mark} of moves)mark.after(el);side.scrollTop=previousScroll;basic(current);refresh();}
+           function openExtra(e){if(e[4]&&body.dataset.betaTier==='free')return;const target=e[3];if(!enter()){if(target.tagName==='DETAILS')target.open=true;target.scrollIntoView({block:'start'});return;}clearExtra();body.classList.add('hv-extra');target.dataset.hvExtraActive='true';if(target.parentElement===advanced)advanced.dataset.hvExtraActive='true';if(target.tagName==='DETAILS')target.open=true;for(const b of nav.children)b.setAttribute('aria-pressed',String(b.dataset.extra===e[0]));target.scrollTop=0;}
+           for(const e of extras){const b=document.createElement('button');b.type='button';b.dataset.extra=e[0];if(e[4])b.dataset.pro='true';b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true">${e[5]}</svg>${label(e[1],e[2])}`;b.setAttribute('aria-label',e[1]+' / '+e[2]);b.onclick=()=>openExtra(e);nav.append(b)}
+           nav.addEventListener('click',e=>{const b=e.target.closest('button[data-tool]');if(b){basic(b.dataset.tool);enter();}});
+           $('hvFocusDone').onclick=exit;$('hvFocusHide').onclick=()=>togglePanel(!body.classList.contains('hv-focus-hidden'));
+           media.addEventListener('change',()=>{if(!media.matches)exit();});
+           document.addEventListener('keydown',e=>{if(active&&e.key==='Escape'){e.preventDefault();exit();}});
+           document.addEventListener('fullscreenchange',()=>{if(document.fullscreenElement&&active)exit();});
+           basic(current);
+          })();
+          '''
+              # Replace only the immersive UI controller; leave pixel engine and previous mobile controls intact.
+              i=s.rindex('/* HV One Immersive 1.3.1 */')
+              j=s.index('</script></body></html>',i)
+              s=s[:i]+js+'\n'+s[j:]
+              s=s.replace(':not(.hv-mobile-actions){display:none!important}',':not(.hv-mobile-actions):not(.hv-compact-params):not([data-hv-extra-active=true]){display:none!important}',1)
+              s=s.replace('</style>',css+'\n</style>',1)
+              s=s.replace('.hv-focusbar [lang]\')','.hv-focusbar [lang],.hv-compact-params [lang]\')',1)
+              s=s.replace('HV One 1.3.1 — Immersive Edit','HV One 1.3.2 — Compact Tools',1).replace('PHOTO EDITOR / 1.3.1','PHOTO EDITOR / 1.3.2').replace('HV ONE 1.3.1</div>','HV ONE 1.3.2</div>')
+              p.write_text(s,encoding='utf-8')
+          p=Path('sw.js')
+          s=p.read_text(encoding='utf-8')
+          assert 'hv-one-1.3.1-immersive-pages1' in s or 'hv-one-1.3.2-compact-pages1' in s
+          s=s.replace('hv-one-1.3.1-immersive-pages1','hv-one-1.3.2-compact-pages1')
+          p.write_text(s,encoding='utf-8')
+          PYCODE
+          python3 <<'CHECK'
+          from pathlib import Path
+          s=Path('index.html').read_text(encoding='utf-8')
+          Path('/tmp/hv132-check.js').write_text(s[s.index('<script>')+8:s.rindex('</script>')],encoding='utf-8')
+          CHECK
+          node --check /tmp/hv132-check.js
+          node --check sw.js
+          git config user.name "HV One Update"
+          git config user.email "update@users.noreply.github.com"
+          git add index.html sw.js
+          git diff --cached --quiet || git commit -m "Add swipeable compact immersive tools 1.3.2"
+          git push
