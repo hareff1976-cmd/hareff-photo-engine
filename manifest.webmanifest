@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "HAREFF Photo Engine 1.0 RC",
-  "short_name": "HAREFF",
+  "name": "HV One — Professional Photo Editor",
+  "short_name": "HV One",
   "lang": "ru",
   "start_url": "./index.html",
   "scope": "./",
