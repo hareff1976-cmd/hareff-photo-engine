@@ -1,5 +1,5 @@
 const PREFIX = 'hareff-pages:' + self.registration.scope + ':';
-const CACHE = PREFIX + 'hv-one-1.3.2-compact-pages1';
+const CACHE = PREFIX + 'hv-one-1.3.2-compact-pages2';
 const ASSETS = [
   './index.html',
   './studio.html',

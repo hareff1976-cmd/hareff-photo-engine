@@ -623,7 +623,7 @@ $('sigActivate').onclick=()=>activate($('sigCode').value.trim(),true);$('sigForg
  const label=(ru,en)=>`<span lang="ru">${ru}</span><span lang="en">${en}</span>`;
  const paramsBar=document.createElement('div');paramsBar.className='hv-compact-params';paramsBar.setAttribute('aria-label','Параметры / Parameters');controls.before(paramsBar);
  const extras=[
- ['profiles','Профиль','Profile',$('presets').closest('.group'),false,'<path d="M4 5h16v14H4zM7 15l4-5 6 6"/>'],
+ ['profiles','Профили','Profiles',$('presets').closest('.group'),false,'<path d="M4 5h16v14H4zM7 15l4-5 6 6"/>'],
  ['signature','Коллекция','Signature',$('signatureStore'),false,'<path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/>'],
  ['curves','Кривые','Curves',$('curve').closest('details'),true,'<path d="M3 21V3M3 21h18M4 19C9 19 9 5 20 5"/>'],
  ['hsl','HSL','HSL',advanced.children[1],true,'<circle cx="12" cy="12" r="9"/><path d="M12 3v9l8 4M12 12l-8 5"/>'],
@@ -647,7 +647,7 @@ $('sigActivate').onclick=()=>activate($('sigCode').value.trim(),true);$('sigForg
  function enter(){if(active)return true;if(!source||exporting||full||!media.matches)return false;previousScroll=side.scrollTop;active=true;stage.append(bar);side.prepend(nav);controls.after(actions);side.append(actions);body.classList.add('hv-focus');togglePanel(false);side.scrollTop=0;refresh();return true;}
  function exit(){if(!active)return;active=false;togglePanel(false);clearExtra();body.classList.remove('hv-focus');for(const {el,mark} of moves)mark.after(el);side.scrollTop=previousScroll;basic(current);refresh();}
  function openExtra(e){if(e[4]&&body.dataset.betaTier==='free')return;const target=e[3];if(!enter()){if(target.tagName==='DETAILS')target.open=true;target.scrollIntoView({block:'start'});return;}clearExtra();body.classList.add('hv-extra');target.dataset.hvExtraActive='true';if(target.parentElement===advanced)advanced.dataset.hvExtraActive='true';if(target.tagName==='DETAILS')target.open=true;for(const b of nav.children)b.setAttribute('aria-pressed',String(b.dataset.extra===e[0]));target.scrollTop=0;}
- for(const e of extras){const b=document.createElement('button');b.type='button';b.dataset.extra=e[0];if(e[4])b.dataset.pro='true';b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true">${e[5]}</svg>${label(e[1],e[2])}`;b.setAttribute('aria-label',e[1]+' / '+e[2]);b.onclick=()=>openExtra(e);nav.append(b)}
+ for(const e of extras){const b=document.createElement('button');b.type='button';b.dataset.extra=e[0];if(e[4])b.dataset.pro='true';b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true">${e[5]}</svg>${label(e[1],e[2])}`;b.setAttribute('aria-label',e[1]+' / '+e[2]);b.onclick=()=>openExtra(e);if(e[0]==='profiles')nav.prepend(b);else nav.append(b)}
  nav.addEventListener('click',e=>{const b=e.target.closest('button[data-tool]');if(b){basic(b.dataset.tool);enter();}});
  $('hvFocusDone').onclick=exit;$('hvFocusHide').onclick=()=>togglePanel(!body.classList.contains('hv-focus-hidden'));
  media.addEventListener('change',()=>{if(!media.matches)exit();});
