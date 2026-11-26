@@ -1,0 +1,103 @@
+name: HV One Immersive Edit 1.3.1
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/immersive-131.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python3 <<'PYTHON'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          marker='/* HV One Immersive 1.3.1 */'
+          if marker not in s:
+              assert 'HV One Mobile Pro 1.3' in s
+              assert 'function fidelityNeutral' in s and 'hareff.signature01.token.v1' in s
+              css='''
+          /* HV One Immersive 1.3.1 */
+          .hv-focusbar{display:none}
+          @media(max-width:850px) and (orientation:portrait) and (min-height:480px){
+           body.hv-focus .stage{position:fixed;inset:0;width:100%;height:100dvh;max-width:none;max-height:none;z-index:100;margin:0;border:0;border-radius:0;padding:0;background:#08090b;overflow:hidden}
+           body.hv-focus .stage .compare{box-shadow:none}
+           body.hv-focus .stage .viewer-tools{top:max(6px,env(safe-area-inset-top));right:6px}
+           body.hv-focus .stage #fullToggle{display:none}
+           body.hv-focus .hv-focusbar{display:flex;position:absolute;left:8px;top:calc(max(6px,env(safe-area-inset-top)) + 42px);z-index:7;gap:5px;touch-action:manipulation}
+           .hv-focusbar button{padding:7px 10px;min-height:36px;background:rgba(10,11,13,.82);border:1px solid #ffffff40;color:#fff;font-size:12px;border-radius:9px}
+           body.hv-focus .side{position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;max-height:min(49dvh,390px);z-index:110;padding:8px 12px max(9px,env(safe-area-inset-bottom));background:rgba(12,13,16,.76);border:1px solid #ffffff25;border-bottom:0;border-radius:18px 18px 0 0;box-shadow:0 -8px 28px #0004;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;touch-action:pan-y}
+           body.hv-focus .side>*:not(.hv-mobile-nav):not(.comparebar):not(#controls):not(.hv-mobile-actions){display:none!important}
+           body.hv-focus .side .comparebar{margin:0 0 6px}
+           body.hv-focus .side .hv-mobile-nav{margin:0 0 5px}
+           body.hv-focus .side .hv-mobile-nav button{background:rgba(30,32,36,.78);min-height:42px}
+           body.hv-focus .side .hv-mobile-nav button[aria-pressed=true]{background:rgba(72,76,83,.94)}
+           body.hv-focus .side #controls>.group{padding:4px 0 0;border-color:#ffffff24}
+           body.hv-focus .side #controls .control{margin:0 0 3px}
+           body.hv-focus .side #controls .control label{color:#fff;text-shadow:0 1px 3px #000}
+           body.hv-focus .side #controls .control input{height:27px;touch-action:pan-x}
+           body.hv-focus .side .hv-mobile-actions{background:transparent;border-color:#ffffff25;padding:4px 0 0}
+           body.hv-focus.hv-focus-hidden .side{display:none!important}
+           .hv-focusbar [lang=en]{display:none}
+           html[lang=en] .hv-focusbar [lang=ru]{display:none}
+           html[lang=en] .hv-focusbar [lang=en]{display:inline}
+           .hv-focusbar .hv-show-panel{display:none}
+           body.hv-focus-hidden .hv-focusbar .hv-hide-panel{display:none}
+           body.hv-focus-hidden .hv-focusbar .hv-show-panel{display:inline}
+          }
+          '''
+              js='''
+          /* HV One Immersive 1.3.1 */
+          (()=>{
+           const body=document.body,side=document.querySelector('.side'),workspace=document.querySelector('.workspace');
+           const nav=document.querySelector('.hv-mobile-nav'),bar=workspace.querySelector('.comparebar'),actions=document.querySelector('.hv-mobile-actions'),controls=$('controls');
+           const media=matchMedia('(max-width:850px) and (orientation:portrait) and (min-height:480px)');
+           const moves=[nav,bar,actions].map(el=>{const mark=document.createComment('HV focus original position');el.before(mark);return {el,mark};});
+           let active=false,previousScroll=0;
+           const toolbar=document.createElement('div');toolbar.className='hv-focusbar';
+           toolbar.innerHTML='<button type="button" id="hvFocusDone"><span lang="ru">Готово</span><span lang="en">Done</span></button><button type="button" id="hvFocusHide" aria-label="Панель / Panel" aria-expanded="true"><span class="hv-hide-panel"><span lang="ru">Скрыть</span><span lang="en">Hide</span></span><span class="hv-show-panel"><span lang="ru">Инструменты</span><span lang="en">Tools</span></span></button>';
+           stage.append(toolbar);
+           function refresh(){requestAnimationFrame(()=>{if(source)fit();});}
+           function togglePanel(hide){body.classList.toggle('hv-focus-hidden',hide);$('hvFocusHide').setAttribute('aria-expanded',String(!hide));}
+           function enter(){if(active||!source||exporting||full||!media.matches)return;previousScroll=side.scrollTop;active=true;controls.before(bar,nav);controls.after(actions);body.classList.add('hv-focus');togglePanel(false);side.scrollTop=0;refresh();}
+           function exit(){if(!active)return;active=false;togglePanel(false);body.classList.remove('hv-focus');for(const {el,mark} of moves)mark.after(el);side.scrollTop=previousScroll;refresh();}
+           nav.addEventListener('click',e=>{if(e.target.closest('button[data-tool]'))enter();});
+           $('hvFocusDone').onclick=exit;
+           $('hvFocusHide').onclick=()=>togglePanel(!body.classList.contains('hv-focus-hidden'));
+           media.addEventListener('change',()=>{if(!media.matches)exit();});
+           document.addEventListener('keydown',e=>{if(active&&e.key==='Escape'){e.preventDefault();exit();}});
+           document.addEventListener('fullscreenchange',()=>{if(document.fullscreenElement&&active)exit();});
+          })();
+          '''
+              assert s.count('</style>')==1 and s.count('</script></body></html>')==1
+              s=s.replace('</style>',css+'\n</style>',1)
+              s=s.replace('</script></body></html>',js+'\n</script></body></html>',1)
+              s=s.replace('.hv-mobile-extras [lang]\')','.hv-mobile-extras [lang],.hv-focusbar [lang]\')',1)
+              # UI version only; leave protocol / storage identifiers unchanged.
+              s=s.replace('<title>HV One 1.3 — Mobile Pro Interface</title>','<title>HV One 1.3.1 — Immersive Edit</title>',1)
+              s=s.replace('PHOTO EDITOR / 1.3','PHOTO EDITOR / 1.3.1')
+              s=s.replace('HV ONE 1.3</div>','HV ONE 1.3.1</div>')
+              p.write_text(s,encoding='utf-8')
+          p=Path('sw.js')
+          s=p.read_text(encoding='utf-8')
+          assert 'hv-one-1.3-mobile-pages1' in s or 'hv-one-1.3.1-immersive-pages1' in s
+          s=s.replace('hv-one-1.3-mobile-pages1','hv-one-1.3.1-immersive-pages1')
+          p.write_text(s,encoding='utf-8')
+          PYTHON
+          python3 - <<'PYTHON'
+          from pathlib import Path
+          s=Path('index.html').read_text(encoding='utf-8')
+          assert '/* HV One Immersive 1.3.1 */' in s
+          Path('/tmp/hv-one-check.js').write_text(s.split('<script>')[-1].split('</script>')[0],encoding='utf-8')
+          PYTHON
+          node --check /tmp/hv-one-check.js
+          node --check sw.js
+          git config user.name "HV One Update"
+          git config user.email "update@users.noreply.github.com"
+          git add index.html sw.js
+          git diff --cached --quiet || git commit -m "Add immersive mobile editing mode 1.3.1"
+          git push
